@@ -29,7 +29,7 @@ def seed_everything(seed):
 
 
 def get_name(args, current_date, fold=0):
-    dataset_str = f'{args.dataset}_{fold}_{args.ratio}_'
+    dataset_str = f'{args.dataset}_{fold}_ratio_{args.ratio}_'
     date_str = f'{current_date.day}-{current_date.month}-{current_date.year}_{current_date.hour}-{current_date.minute}-{current_date.second}'
     model_str = f'{args.model_type}_{args.epochs}_{args.performance_metric}_{args.optimizer}_'
     unlearning_str = f'{args.mode}_{args.submode}_'
