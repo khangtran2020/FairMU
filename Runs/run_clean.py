@@ -35,7 +35,7 @@ def run(args, data, current_time, fold, device):
                                         replace=False, random_state=args.seed).reset_index(drop=True)
         else:
             num_pos_dis = disadv_gp_df[disadv_gp_df[label] == 1]
-            if int(args.ratio * num_data) >= num_pos_dis:
+            if int(args.ratio * num_data) >= len(num_pos_dis):
                 disadv_gp_df = disadv_gp_df.sample(n=len(disadv_gp_df) - int(args.ratio * num_data),
                                                    replace=False, random_state=args.seed).reset_index(drop=True)
                 df_train = pd.concat([adv_gp_df, disadv_gp_df]).reset_index(drop=True)
@@ -118,9 +118,10 @@ def run(args, data, current_time, fold, device):
         history['equality_odd'].append(equal_odd + equal_opp)
         history['equality_opp'].append(equal_opp)
         es(epoch=epoch, epoch_score=acc_score, model=model, model_path=args.save_path + model_name)
-
+    print("Hello world")
     model.load_state_dict(torch.load(args.save_path + model_name))
     test_loss, test_outputs, test_targets = eval_fn(test_loader, model, criterion, device)
     test_acc = performace_eval(args, test_targets, test_outputs)
     history['best_test'] = test_acc
+    print(name)
     save_res(name=name, args=args, dct=history)
