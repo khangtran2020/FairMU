@@ -49,6 +49,7 @@ def run(args, data, current_time, fold, device):
 
     model = init_model(args)
     df_train = df_train.sample(frac=1, replace=False)
+    print(f"Before we have {num_data}, After we have {df_train.shape[0]} data points")
     x_train = torch.from_numpy(df_train[feature_cols].values.astype(np.float32)).to(device)
     y_train = torch.from_numpy(df_train[label].values.astype(int)).to(device)
     z_train = torch.from_numpy(df_train[z].values.astype(int)).to(device)

@@ -46,6 +46,7 @@ def run(args, data, current_time, fold, device):
                                                    replace=False, random_state=args.seed).reset_index(drop=True)
                 df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df]).reset_index(drop=True)
     df_train = df_train.sample(frac=1, replace=False)
+    print(f"Before we have {num_data}, After we have {df_train.shape[0]} data points")
     train_dataset = Data(df_train[feature_cols].values, df_train[label].values, df_train[z].values)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=0,
                               shuffle=True, pin_memory=True, drop_last=True)
