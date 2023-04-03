@@ -8,10 +8,13 @@
 module load python
 conda activate torch
 
-for MODE in clean random target
+for MODEL in lr nn
 do
-    for RUN in 1 2 3 4 5
+    for MODE in clean random target
     do
-        python main.py --mode clean --submode $MODE --dataset bank --batch_size 64 --lr 0.1 --epochs 200 --seed $RUN
+        for RUN in 1 2 3 4 5
+        do
+            python main.py --mode clean --submode $MODE --dataset bank --batch_size 64 --lr 0.1 --epochs 200 --seed $RUN
+        done
     done
 done

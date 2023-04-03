@@ -18,7 +18,7 @@ class NeuralNetwork(nn.Module):
         for i in range(0, self.n_layers):
             h = self.layers[i](h)
             h = self.activation(h)
-        h = self.layers[-1](h)
+        h = torch.nn.functional.sigmoid(self.layers[-1](h))
         return h
 
 class Logit(nn.Module):
