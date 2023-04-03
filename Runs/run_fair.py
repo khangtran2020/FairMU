@@ -46,7 +46,7 @@ def run(args, data, current_time, fold, device):
                 disadv_gp_pos_df = disadv_gp_df.sample(n=len(disadv_gp_pos_df) - int(args.ratio * num_data),
                                                    replace=False, random_state=args.seed).reset_index(drop=True)
                 df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df]).reset_index(drop=True)
-
+        print(df_train[z].value_counts())
     model = init_model(args)
     df_train = df_train.sample(frac=1, replace=False)
     print(f"Before we have {num_data}, After we have {df_train.shape[0]} data points")

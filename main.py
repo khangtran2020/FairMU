@@ -22,12 +22,11 @@ def run(args, current_time, device):
         train_df, test_df, male_df, female_df, feature_cols, label, z = read_abalone(args)
     fold = 0
     data = (train_df, test_df, male_df, female_df, feature_cols, label, z)
-
     if args.mode == 'clean':
-        print('Running Vanila mode')
+        print(f"Running with mode clean and submode {args.submode}")
         run_clean(args, data, current_time, fold, device)
     elif args.mode == 'fair':
-        print('Running Fairbatch mode')
+        print(f"Running with mode fair and submode {args.submode}")
         run_fair(args, data, current_time, fold, device)
 
 
