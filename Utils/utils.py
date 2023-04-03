@@ -33,10 +33,7 @@ def get_name(args, current_date, fold=0):
     date_str = f'{current_date.day}-{current_date.month}-{current_date.year}_{current_date.hour}-{current_date.minute}-{current_date.second}'
     model_str = f'{args.model_type}_{args.epochs}_{args.performance_metric}_{args.optimizer}_'
     unlearning_str = f'{args.mode}_{args.submode}_'
-    if args.submode == 'clean':
-        res_str = dataset_str + model_str + date_str
-    else:
-        res_str = dataset_str + model_str + unlearning_str + date_str
+    res_str = dataset_str + model_str + unlearning_str + date_str
     return res_str
 
 
