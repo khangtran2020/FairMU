@@ -30,7 +30,7 @@ def run(args, data, current_time, fold, device):
     elif args.submode == 'random':
         df_train = pd.concat([adv_gp_df, disadv_gp_df]).reset_index(drop=True)
         df_train.sample(frac=1 - args.ratio, replace=False, random_state=args.seed)
-    elif args.submode == 'targeted':
+    elif args.submode == 'target':
         if int(args.ratio * num_data) >= len(disadv_gp_df):
             df_train = adv_gp_df.sample(n=len(adv_gp_df) - (int(args.ratio * num_data) - len(disadv_gp_df)),
                                         replace=False, random_state=args.seed).reset_index(drop=True)
