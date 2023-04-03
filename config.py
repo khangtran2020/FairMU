@@ -7,7 +7,7 @@ def add_general_group(group):
     group.add_argument("--plot_path", type=str, default="results/plot/", help="dir path for output file")
     group.add_argument("--seed", type=int, default=2605, help="seed value")
     group.add_argument("--mode", type=str, default='clean', help="Mode of running ['clean', 'fair']")
-    group.add_argument("--submode", type=str, default='fairbatch', help="")
+    group.add_argument("--submode", type=str, default='clean', help="")
     group.add_argument("--num_worker", type=int, default=0, help="")
     group.add_argument("--debug", type=bool, default=True)
     group.add_argument("--performance_metric", type=str, default='acc', help="Metrics of performance")
@@ -15,8 +15,7 @@ def add_general_group(group):
 
 def add_data_group(group):
     group.add_argument('--data_path', type=str, default='Data/', help="dir path to dataset")
-    group.add_argument('--dataset', type=str, default='cora', help="name of dataset")
-    group.add_argument('--data_remove_mode', type=str, default='uniform', help="")
+    group.add_argument('--dataset', type=str, default='bank', help="name of dataset")
     group.add_argument('--ratio', type=float, default=0.1, help="")
     group.add_argument('--folds', type=int, default=5, help='number of folds for cross-validation')
 
