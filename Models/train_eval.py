@@ -114,13 +114,11 @@ def train_fn(dataloader, model, criterion, optimizer, device, scheduler):
         features, target, _ = d
 
         features = features.to(device, dtype=torch.float)
-        target = target.to(device, dtype=torch.float)
+        target = torch.squeeze(target).to(device, dtype=torch.float)
         # num_data_point += features.size(dim=0)
         optimizer.zero_grad()
-
         output = model(features)
         output = torch.squeeze(output)
-
         loss = criterion(output, target)
         train_loss += loss.item()
         loss.backward()

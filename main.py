@@ -24,8 +24,10 @@ def run(args, current_time, device):
     data = (train_df, test_df, male_df, female_df, feature_cols, label, z)
 
     if args.mode == 'clean':
+        print('Running Vanila mode')
         run_clean(args, data, current_time, fold, device)
-    elif args.mode == 'fairbatch':
+    elif args.mode == 'fair':
+        print('Running Fairbatch mode')
         run_fair(args, data, current_time, fold, device)
 
 
