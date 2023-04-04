@@ -7,6 +7,99 @@ from sklearn.preprocessing import MinMaxScaler
 from Data.datasets import Data
 from sklearn.model_selection import train_test_split
 
+def read_adult(args):
+    header = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation',
+              'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+              'income']
+    label_dict = {
+        ' <=50K': '<=50K',
+        ' >50K': '>50K',
+        ' <=50K.': '<=50K',
+        ' >50K.': '>50K'
+    }
+    train_df = pd.read_csv('Data/Adult/adult.data', header=None)
+    test_df = pd.read_csv('Data/Adult/adult.test', skiprows=1, header=None)
+    all_data = pd.concat([train_df, test_df], axis=0)
+    all_data.columns = header
+
+    def hour_per_week(x):
+        if x <= 19:
+            return '0'
+        elif (x > 19) & (x <= 29):
+            return '1'
+        elif (x > 29) & (x <= 39):
+            return '2'
+        elif x > 39:
+            return '3'
+
+    def age(x):
+        if x <= 24:
+            return '0'
+        elif (x > 24) & (x <= 34):
+            return '1'
+        elif (x > 34) & (x <= 44):
+            return '2'
+        elif (x > 44) & (x <= 54):
+            return '3'
+        elif (x > 54) & (x <= 64):
+            return '4'
+        else:
+            return '5'
+
+    def country(x):
+        if x == ' United-States':
+            return 0
+        else:
+            return 1
+
+    all_data['hours-per-week'] = all_data['hours-per-week'].map(lambda x: hour_per_week(x))
+    all_data['age'] = all_data['age'].map(lambda x: age(x))
+    all_data['native-country'] = all_data['native-country'].map(lambda x: country(x))
+    all_data = all_data.drop(
+        ['fnlwgt', 'education-num', 'marital-status', 'occupation', 'relationship', 'capital-gain', 'capital-loss'],
+        axis=1)
+    temp = pd.get_dummies(all_data['age'], prefix='age')
+    all_data = pd.concat([all_data, temp], axis=1)
+    all_data = all_data.drop('age', axis=1)
+    temp = pd.get_dummies(all_data['workclass'], prefix='workclass')
+    all_data = pd.concat([all_data, temp], axis=1)
+    all_data = all_data.drop('workclass', axis=1)
+    temp = pd.get_dummies(all_data['education'], prefix='education')
+    all_data = pd.concat([all_data, temp], axis=1)
+    all_data = all_data.drop('education', axis=1)
+    temp = pd.get_dummies(all_data['race'], prefix='race')
+    all_data = pd.concat([all_data, temp], axis=1)
+    all_data = all_data.drop('race', axis=1)
+    temp = pd.get_dummies(all_data['hours-per-week'], prefix='hour')
+    all_data = pd.concat([all_data, temp], axis=1)
+    all_data = all_data.drop('hours-per-week', axis=1)
+    all_data['income'] = all_data['income'].map(label_dict)
+    lb = LabelEncoder()
+    all_data['sex'] = lb.fit_transform(all_data['sex'].values)
+    lb = LabelEncoder()
+    all_data['income'] = lb.fit_transform(all_data['income'].values)
+    feature_cols = list(all_data.columns)
+    feature_cols.remove('income')
+    feature_cols.remove('sex')
+    label = 'income'
+    z = 'sex'
+    if args.mode == 'func':
+        all_data = minmax_scale(df=all_data, cols=feature_cols)
+        all_data['bias'] = 1.0
+        feature_cols.append('bias')
+    train_df = all_data[:train_df.shape[0]].reset_index(drop=True)
+    test_df = all_data[train_df.shape[0]:].reset_index(drop=True)
+    male_df = train_df[train_df['sex'] == 1].copy().reset_index(drop=True)
+    female_df = train_df[train_df['sex'] == 0].copy().reset_index(drop=True)
+    fold_separation(male_df, args.folds, feature_cols, label)
+    fold_separation(female_df, args.folds, feature_cols, label)
+    if args.mode == 'ratio':
+        male_df, female_df = choose_data(args=args, df_0=male_df, df_1=female_df)
+        train_df = pd.concat([male_df, female_df], axis=0).sample(frac=1).reset_index(drop=True)
+    else:
+        train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
+    return train_df, test_df, male_df, female_df, feature_cols, label, z
+
 def read_bank(args):
     # 3305
     df = pd.read_csv('Data/Bank/formated_bank.csv')

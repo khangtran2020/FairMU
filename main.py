@@ -4,7 +4,7 @@ import warnings
 import torch
 import logging
 from config import parse_args
-from Data.read_data import read_bank, read_abalone
+from Data.read_data import read_bank, read_abalone, read_adult
 from Utils.utils import seed_everything
 from Runs.run_clean import run as run_clean
 from Runs.run_fair import run as run_fair
@@ -20,6 +20,9 @@ def run(args, current_time, device):
         train_df, test_df, male_df, female_df, feature_cols, label, z = read_bank(args)
     elif args.dataset == 'abalone':
         train_df, test_df, male_df, female_df, feature_cols, label, z = read_abalone(args)
+    elif args.dataset == 'adult':
+        train_df, test_df, male_df, female_df, feature_cols, label, z = read_adult(args)
+    print(f'Running with dataset {args.dataset}, has {len(train_df)} train, {len(test_df)} test, {len(male_df)} male and {len(female_df)} female')
     fold = 0
     data = (train_df, test_df, male_df, female_df, feature_cols, label, z)
     if args.mode == 'clean':
