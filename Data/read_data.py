@@ -7,6 +7,7 @@ from sklearn.preprocessing import MinMaxScaler
 from Data.datasets import Data
 from sklearn.model_selection import train_test_split
 
+
 def read_adult(args):
     header = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation',
               'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
@@ -100,6 +101,7 @@ def read_adult(args):
         train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
     return train_df, test_df, male_df, female_df, feature_cols, label, z
 
+
 def read_bank(args):
     # 3305
     df = pd.read_csv('Data/Bank/formated_bank.csv')
@@ -121,6 +123,7 @@ def read_bank(args):
     train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
     return train_df, test_df, male_df, female_df, feature_cols, label, z
 
+
 def read_abalone(args):
     # 1436
     df = pd.read_csv('Data/Abalone/formated_abalone.csv')
@@ -141,17 +144,20 @@ def read_abalone(args):
     train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
     return train_df, test_df, male_df, female_df, feature_cols, label, z
 
+
 def fold_separation(train_df, folds, feat_cols, label):
     skf = StratifiedKFold(n_splits=folds)
     train_df['fold'] = np.zeros(train_df.shape[0])
     for i, (idxT, idxV) in enumerate(skf.split(train_df[feat_cols], train_df[label])):
         train_df.at[idxV, 'fold'] = i
 
+
 def minmax_scale(df, cols):
     scaler = MinMaxScaler(feature_range=(-1, 1))
     for col in cols:
         df[col] = scaler.fit_transform(df[col].values.reshape(-1, 1))
     return df
+
 
 def choose_data(args, df_0, df_1):
     # print(len(df_0),len(df_1))
@@ -173,6 +179,7 @@ def choose_data(args, df_0, df_1):
         idx = np.random.choice(np.arange(len(df_1)), size=num_pt, replace=False)
         df_1 = df_1.iloc[idx, :].copy()
         return df_0.reset_index(drop=True), df_1.reset_index(drop=True)
+
 
 def get_UTK(args):
     utk_data_path = "Data/UTK/age_gender.gz"
@@ -209,3 +216,97 @@ def get_UTK(args):
             ismale=z_test[z_test == i].values)
         group_num['group_{}'.format(i)] = len(groups_test_dataset['group_{}'.format(i)])
     return train_dataset, valid_dataset, test_dataset, groups_train_dataset, groups_test_dataset, group_num
+
+
+def read_adult_(args):
+    header = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation',
+              'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+              'income']
+    label_dict = {
+        ' <=50K': '<=50K',
+        ' >50K': '>50K',
+        ' <=50K.': '<=50K',
+        ' >50K.': '>50K'
+    }
+    train_df = pd.read_csv('Data/Adult/adult.data', names=header, na_values="?", sep=r'\s*,\s*', engine='python').loc[
+        lambda df: df['race'].isin(['White', 'Black'])]
+    test_df = pd.read_csv('Data/Adult/adult.test', names=header, na_values="?", sep=r'\s*,\s*', engine='python').loc[
+        lambda df: df['race'].isin(['White', 'Black'])]
+    all_data = pd.concat([train_df, test_df], axis=0)
+
+    Z = all_data['sex'].values
+    Y = all_data['income'].values
+    X = all_data.drop(['sex', 'income'], axis=1).fillna('Unknown').pipe(pd.get_dummies, drop_first=True)
+    feature_cols = list(X.columns)
+    label = 'income'
+    z = 'sex'
+    all_data = X.copy()
+    all_data['sex'] = Z
+    all_data['income'] = Y
+    train_df = all_data[:train_df.shape[0]].reset_index(drop=True)
+    test_df = all_data[train_df.shape[0]:].reset_index(drop=True)
+    male_df = train_df[train_df['sex'] == 1].copy().reset_index(drop=True)
+    female_df = train_df[train_df['sex'] == 0].copy().reset_index(drop=True)
+    fold_separation(male_df, args.folds, feature_cols, label)
+    fold_separation(female_df, args.folds, feature_cols, label)
+    train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
+    return train_df, test_df, male_df, female_df, feature_cols, label, z
+
+
+def read_compas(args):
+    data_dir = 'Data/Compas/compas-scores-two-years.csv'
+    df = pd.read_csv(data_dir)
+    df = df[df['days_b_screening_arrest'] >= -30]
+    df = df[df['days_b_screening_arrest'] <= 30]
+    df = df[df['is_recid'] != -1]
+    df = df[df['c_charge_degree'] != '0']
+    df = df[df['score_text'] != 'N/A']
+
+    df['in_custody'] = pd.to_datetime(df['in_custody'])
+    df['out_custody'] = pd.to_datetime(df['out_custody'])
+    df['diff_custody'] = (df['out_custody'] - df['in_custody']).dt.total_seconds()
+    df['c_jail_in'] = pd.to_datetime(df['c_jail_in'])
+    df['c_jail_out'] = pd.to_datetime(df['c_jail_out'])
+    df['diff_jail'] = (df['c_jail_out'] - df['c_jail_in']).dt.total_seconds()
+    df.drop(
+        [
+            'id', 'name', 'first', 'last', 'v_screening_date', 'compas_screening_date', 'dob', 'c_case_number',
+            'screening_date', 'in_custody', 'out_custody', 'c_jail_in', 'c_jail_out'
+        ], axis=1, inplace=True
+    )
+    df = df[df['race'].isin(['African-American', 'Caucasian'])]
+    df['two_year_recid'] = 1 - df['two_year_recid']
+    label = 'two_year_recid'
+    z = 'race'
+    features = ['age', 'sex', 'race', 'diff_custody', 'diff_jail', 'priors_count', 'juv_fel_count', 'c_charge_degree',
+                'c_charge_desc', 'v_score_text']
+    df = df[features + [label, z]]
+    categorical_columns = []
+    for col in features:
+        if df[col].isnull().sum() > 0:
+            df.drop(col, axis=1, inplace=True)
+            features.remove(col)
+        else:
+            if features[col].dtype == object:
+                categorical_columns += [col]
+            else:
+                mean, std = df.mean(dim=0)[col], df.std(dim=0)[col]
+                df[col] = (df[col] - mean) / std
+
+    df[z] = df[z].map({
+        'African-American': 0,
+        'Caucasian': 1
+    })
+    df = pd.get_dummies(df, columns=categorical_columns, prefix_sep='_')
+    feature_cols = list(df.columns)
+    feature_cols.remove(label)
+    feature_cols.remove(z)
+    train_df, test_df, _, _ = train_test_split(df, df[label], test_size=0.2, stratify=df[label])
+    train_df = train_df.reset_index(drop=True)
+    test_df = test_df.reset_index(drop=True)
+    male_df = train_df[train_df[z] == 1].copy().reset_index(drop=True)
+    female_df = train_df[train_df[z] == 0].copy().reset_index(drop=True)
+    fold_separation(male_df, args.folds, feature_cols, label)
+    fold_separation(female_df, args.folds, feature_cols, label)
+    train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
+    return train_df, test_df, male_df, female_df, feature_cols, label, z

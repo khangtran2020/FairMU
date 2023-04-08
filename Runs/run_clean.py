@@ -26,26 +26,30 @@ def run(args, data, current_time, fold, device):
     args.num_feat = len(feature_cols)
     if args.submode == 'clean':
         df_train = pd.concat([adv_gp_df, disadv_gp_df]).reset_index(drop=True)
-    elif args.submode == 'random':
-        df_train = pd.concat([adv_gp_df, disadv_gp_df]).reset_index(drop=True)
-        df_train = df_train.sample(frac=1 - args.ratio, replace=False, random_state=args.seed)
-    elif args.submode == 'targeted':
-        if int(args.ratio * num_data) >= len(disadv_gp_df):
-            df_train = adv_gp_df.sample(n=len(adv_gp_df) - (int(args.ratio * num_data) - len(disadv_gp_df)),
-                                        replace=False, random_state=args.seed).reset_index(drop=True)
-        else:
-            num_pos_dis = disadv_gp_df[disadv_gp_df[label] == 1]
-            if int(args.ratio * num_data) >= len(num_pos_dis):
-                disadv_gp_df = disadv_gp_df.sample(n=len(disadv_gp_df) - int(args.ratio * num_data),
-                                                   replace=False, random_state=args.seed).reset_index(drop=True)
-                df_train = pd.concat([adv_gp_df, disadv_gp_df]).reset_index(drop=True)
-            else:
-                disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
-                disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-                disadv_gp_pos_df = disadv_gp_df.sample(n=len(disadv_gp_pos_df) - int(args.ratio * num_data),
-                                                   replace=False, random_state=args.seed).reset_index(drop=True)
-                df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df]).reset_index(drop=True)
-    df_train = df_train.sample(frac=1, replace=False)
+    elif args.submode == 'sc4':
+        adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
+        adv_gp_neg_df = adv_gp_df[adv_gp_df[label] == 0].copy()
+        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
+        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
+        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=int(args.ratio * len(disadv_gp_pos_df)), replace=False, random_state=args.seed)
+        adv_gp_neg_df = adv_gp_neg_df.sample(n=int(args.ratio * len(adv_gp_neg_df)), replace=False, random_state=args.seed)
+        df_train = pd.concat([adv_gp_pos_df, adv_gp_neg_df, disadv_gp_pos_df, disadv_gp_neg_df])
+    elif args.submode == 'sc5':
+        adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
+        adv_gp_neg_df = adv_gp_df[adv_gp_df[label] == 0].copy()
+        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
+        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
+        temp1_df = pd.concat([adv_gp_pos_df, disadv_gp_neg_df], axis = 0)
+        temp2_df = pd.concat([adv_gp_neg_df, disadv_gp_pos_df], axis = 0)
+        temp2_df = temp2_df.sample(n=int(args.ratio * len(temp2_df)), replace=False, random_state=args.seed)
+        df_train = pd.concat([temp1_df, temp2_df])
+    elif args.submode == 'extreme':
+        adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
+        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
+        df_train = pd.concat([adv_gp_pos_df, disadv_gp_neg_df])
+    else:
+        df_train = None
+    df_train = df_train.sample(frac=1, replace=False).reset_index(drop=True)
     print(f"Before we have {num_data}, After we have {df_train.shape[0]} data points")
     train_dataset = Data(df_train[feature_cols].values, df_train[label].values, df_train[z].values)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=0,
