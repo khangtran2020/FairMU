@@ -149,7 +149,7 @@ def fold_separation(train_df, folds, feat_cols, label):
     skf = StratifiedKFold(n_splits=folds)
     train_df['fold'] = np.zeros(train_df.shape[0])
     for i, (idxT, idxV) in enumerate(skf.split(train_df[feat_cols], train_df[label])):
-        train_df.at[idxV, 'fold'] = i
+        train_df['fold'][idxV] = i
 
 
 def minmax_scale(df, cols):
@@ -218,39 +218,47 @@ def get_UTK(args):
     return train_dataset, valid_dataset, test_dataset, groups_train_dataset, groups_test_dataset, group_num
 
 
-def read_adult_(args):
-    header = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation',
-              'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
-              'income']
-    label_dict = {
-        ' <=50K': '<=50K',
-        ' >50K': '>50K',
-        ' <=50K.': '<=50K',
-        ' >50K.': '>50K'
-    }
-    train_df = pd.read_csv('Data/Adult/adult.data', names=header, na_values="?", sep=r'\s*,\s*', engine='python').loc[
-        lambda df: df['race'].isin(['White', 'Black'])]
-    test_df = pd.read_csv('Data/Adult/adult.test', names=header, na_values="?", sep=r'\s*,\s*', engine='python').loc[
-        lambda df: df['race'].isin(['White', 'Black'])]
-    all_data = pd.concat([train_df, test_df], axis=0)
-
-    Z = all_data['sex'].values
-    Y = all_data['income'].values
-    X = all_data.drop(['sex', 'income'], axis=1).fillna('Unknown').pipe(pd.get_dummies, drop_first=True)
-    feature_cols = list(X.columns)
-    label = 'income'
-    z = 'sex'
-    all_data = X.copy()
-    all_data['sex'] = Z
-    all_data['income'] = Y
-    train_df = all_data[:train_df.shape[0]].reset_index(drop=True)
-    test_df = all_data[train_df.shape[0]:].reset_index(drop=True)
-    male_df = train_df[train_df['sex'] == 1].copy().reset_index(drop=True)
-    female_df = train_df[train_df['sex'] == 0].copy().reset_index(drop=True)
-    fold_separation(male_df, args.folds, feature_cols, label)
-    fold_separation(female_df, args.folds, feature_cols, label)
-    train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
-    return train_df, test_df, male_df, female_df, feature_cols, label, z
+# def read_adult_(args):
+#     header = ['age', 'workclass', 'fnlwgt', 'education', 'education-num', 'marital-status', 'occupation',
+#               'relationship', 'race', 'sex', 'capital-gain', 'capital-loss', 'hours-per-week', 'native-country',
+#               'income']
+#     label_dict = {
+#         ' <=50K': '<=50K',
+#         ' >50K': '>50K',
+#         ' <=50K.': '<=50K',
+#         ' >50K.': '>50K'
+#     }
+#     train_df = pd.read_csv('Data/Adult/adult.data', header=None)
+#     test_df = pd.read_csv('Data/Adult/adult.test', skiprows=1, header=None)
+#     train_df.columns = header
+#     test_df.columns = header
+#     train_df = train_df[train_df['race'].isin([' White', ' Black'])].copy().reset_index(drop=True)
+#     test_df = test_df[train_df['race'].isin([' White', ' Black'])].copy().reset_index(drop=True)
+#     all_data = pd.concat([train_df, test_df], axis=0)
+#
+#     all_data['income'] = all_data['income'].map(label_dict)
+#     lb = LabelEncoder()
+#     all_data['sex'] = lb.fit_transform(all_data['sex'].values)
+#     lb = LabelEncoder()
+#     all_data['income'] = lb.fit_transform(all_data['income'].values)
+#     Z = all_data['sex'].values
+#     Y = all_data['income'].values
+#     X = all_data.drop(['sex', 'income'], axis=1).fillna('Unknown').pipe(pd.get_dummies, drop_first=True)
+#     feature_cols = list(X.columns)
+#     label = 'income'
+#     z = 'sex'
+#     all_data = X.copy()
+#     all_data['sex'] = Z
+#     all_data['income'] = Y
+#     print(all_data.shape)
+#     train_df = all_data[:train_df.shape[0]].reset_index(drop=True)
+#     test_df = all_data[train_df.shape[0]:].reset_index(drop=True)
+#     male_df = train_df[train_df['sex'] == 1].copy().reset_index(drop=True)
+#     female_df = train_df[train_df['sex'] == 0].copy().reset_index(drop=True)
+#     fold_separation(male_df, args.folds, feature_cols, label)
+#     fold_separation(female_df, args.folds, feature_cols, label)
+#     train_df = pd.concat([male_df, female_df], axis=0).reset_index(drop=True)
+#     return train_df, test_df, male_df, female_df, feature_cols, label, z
 
 
 def read_compas(args):
@@ -278,19 +286,19 @@ def read_compas(args):
     df['two_year_recid'] = 1 - df['two_year_recid']
     label = 'two_year_recid'
     z = 'race'
-    features = ['age', 'sex', 'race', 'diff_custody', 'diff_jail', 'priors_count', 'juv_fel_count', 'c_charge_degree',
-                'c_charge_desc', 'v_score_text']
+    features = ['age', 'sex', 'diff_custody', 'diff_jail', 'priors_count', 'juv_fel_count', 'c_charge_degree', 'v_score_text']
     df = df[features + [label, z]]
     categorical_columns = []
     for col in features:
-        if df[col].isnull().sum() > 0:
-            df.drop(col, axis=1, inplace=True)
+        print(col, df[col].dtype)
+        if df[col].isna().sum() > 0:
+            df = df.drop(col, axis=1)
             features.remove(col)
         else:
-            if features[col].dtype == object:
+            if df[col].dtype == object:
                 categorical_columns += [col]
             else:
-                mean, std = df.mean(dim=0)[col], df.std(dim=0)[col]
+                mean, std = df[col].mean(), df[col].std()
                 df[col] = (df[col] - mean) / std
 
     df[z] = df[z].map({
@@ -301,6 +309,7 @@ def read_compas(args):
     feature_cols = list(df.columns)
     feature_cols.remove(label)
     feature_cols.remove(z)
+    print(df.head())
     train_df, test_df, _, _ = train_test_split(df, df[label], test_size=0.2, stratify=df[label])
     train_df = train_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)

@@ -21,7 +21,7 @@ def run(args, current_time, device):
     elif args.dataset == 'abalone':
         train_df, test_df, male_df, female_df, feature_cols, label, z = read_abalone(args)
     elif args.dataset == 'adult':
-        train_df, test_df, male_df, female_df, feature_cols, label, z = read_adult_(args)
+        train_df, test_df, male_df, female_df, feature_cols, label, z = read_adult(args)
     elif args.dataset == 'compas':
         train_df, test_df, male_df, female_df, feature_cols, label, z = read_compas(args)
     print(f'Running with dataset {args.dataset}, has {len(train_df)} train, {len(test_df)} test, {len(male_df)} male and {len(female_df)} female')
