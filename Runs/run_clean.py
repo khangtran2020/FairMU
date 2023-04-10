@@ -31,8 +31,8 @@ def run(args, data, current_time, fold, device):
         adv_gp_neg_df = adv_gp_df[adv_gp_df[label] == 0].copy()
         disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=int(args.ratio * len(disadv_gp_pos_df)), replace=False, random_state=args.seed)
-        adv_gp_neg_df = adv_gp_neg_df.sample(n=int(args.ratio * len(adv_gp_neg_df)), replace=False, random_state=args.seed)
+        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=int((1-args.ratio) * len(disadv_gp_pos_df)), replace=False, random_state=args.seed)
+        adv_gp_neg_df = adv_gp_neg_df.sample(n=int((1-args.ratio) * len(adv_gp_neg_df)), replace=False, random_state=args.seed)
         df_train = pd.concat([adv_gp_pos_df, adv_gp_neg_df, disadv_gp_pos_df, disadv_gp_neg_df])
     elif args.submode == 'sc5':
         adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
@@ -41,7 +41,7 @@ def run(args, data, current_time, fold, device):
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
         temp1_df = pd.concat([adv_gp_pos_df, disadv_gp_neg_df], axis = 0)
         temp2_df = pd.concat([adv_gp_neg_df, disadv_gp_pos_df], axis = 0)
-        temp2_df = temp2_df.sample(n=int(args.ratio * len(temp2_df)), replace=False, random_state=args.seed)
+        temp2_df = temp2_df.sample(n=int((1-args.ratio) * len(temp2_df)), replace=False, random_state=args.seed)
         df_train = pd.concat([temp1_df, temp2_df])
     elif args.submode == 'extreme':
         adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
