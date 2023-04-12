@@ -43,6 +43,24 @@ def run(args, data, current_time, fold, device):
         temp2_df = pd.concat([adv_gp_neg_df, disadv_gp_pos_df], axis = 0)
         temp2_df = temp2_df.sample(n=int((1-args.ratio) * len(temp2_df)), replace=False, random_state=args.seed)
         df_train = pd.concat([temp1_df, temp2_df])
+    elif args.submode == 'sc6':
+        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
+        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
+        num_of_remove = int(args.ratio * len(disadv_gp_df))
+        if len(disadv_gp_pos_df) > num_of_remove:
+            disadv_gp_pos_df = disadv_gp_pos_df.sample(n=len(disadv_gp_pos_df) - num_of_remove, replace=False,
+                                                       random_state=args.seed)
+            df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df])
+        elif len(disadv_gp_pos_df) == num_of_remove:
+            df_train = pd.concat([adv_gp_df, disadv_gp_neg_df])
+        else:
+            disadv_gp_neg_df = disadv_gp_neg_df.sample(n=len(disadv_gp_neg_df) - (num_of_remove - len(disadv_gp_pos_df)),
+                                                       replace=False, random_state=args.seed)
+            df_train = pd.concat([adv_gp_df, disadv_gp_neg_df])
+    elif args.submode == 'sc7':
+        num_of_remove = int(args.ratio * len(disadv_gp_df))
+        disadv_gp_df = disadv_gp_df.sample(n=len(disadv_gp_df) - num_of_remove, replace=False, random_state=args.seed)
+        df_train = pd.concat([adv_gp_df, disadv_gp_df])
     elif args.submode == 'extreme':
         adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()

@@ -32,9 +32,9 @@ def run(args, data, current_time, fold, device):
         adv_gp_neg_df = adv_gp_df[adv_gp_df[label] == 0].copy()
         disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=int((1-args.ratio) * len(disadv_gp_pos_df)), replace=False,
+        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=int((1 - args.ratio) * len(disadv_gp_pos_df)), replace=False,
                                                    random_state=args.seed)
-        adv_gp_neg_df = adv_gp_neg_df.sample(n=int((1-args.ratio) * len(adv_gp_neg_df)), replace=False,
+        adv_gp_neg_df = adv_gp_neg_df.sample(n=int((1 - args.ratio) * len(adv_gp_neg_df)), replace=False,
                                              random_state=args.seed)
         df_train = pd.concat([adv_gp_pos_df, adv_gp_neg_df, disadv_gp_pos_df, disadv_gp_neg_df])
     elif args.submode == 'sc5':
@@ -44,8 +44,26 @@ def run(args, data, current_time, fold, device):
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
         temp1_df = pd.concat([adv_gp_pos_df, disadv_gp_neg_df], axis=0)
         temp2_df = pd.concat([adv_gp_neg_df, disadv_gp_pos_df], axis=0)
-        temp2_df = temp2_df.sample(n=int((1-args.ratio) * len(temp2_df)), replace=False, random_state=args.seed)
+        temp2_df = temp2_df.sample(n=int((1 - args.ratio) * len(temp2_df)), replace=False, random_state=args.seed)
         df_train = pd.concat([temp1_df, temp2_df])
+    elif args.submode == 'sc6':
+        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
+        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
+        num_of_remove = int(args.ratio * len(disadv_gp_df))
+        if len(disadv_gp_pos_df) > num_of_remove:
+            disadv_gp_pos_df = disadv_gp_pos_df.sample(n=len(disadv_gp_pos_df) - num_of_remove, replace=False,
+                                                       random_state=args.seed)
+            df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df])
+        elif len(disadv_gp_pos_df) == num_of_remove:
+            df_train = pd.concat([adv_gp_df, disadv_gp_neg_df])
+        else:
+            disadv_gp_neg_df = disadv_gp_neg_df.sample(n=len(disadv_gp_neg_df) - (num_of_remove - len(disadv_gp_pos_df)),
+                                                       replace=False, random_state=args.seed)
+            df_train = pd.concat([adv_gp_df, disadv_gp_neg_df])
+    elif args.submode == 'sc7':
+        num_of_remove = int(args.ratio * len(disadv_gp_df))
+        disadv_gp_df = disadv_gp_df.sample(n=len(disadv_gp_df) - num_of_remove, replace=False, random_state=args.seed)
+        df_train = pd.concat([adv_gp_df, disadv_gp_df])
     elif args.submode == 'extreme':
         adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
@@ -62,7 +80,8 @@ def run(args, data, current_time, fold, device):
     print(f'Length of the remaining set: {len(x_train)}')
 
     train_dataset = Data(df_train[feature_cols].values, df_train[label].values, df_train[z].values)
-    sampler = FairBatch(model, x_train, y_train, torch.tensor(z_train).to(device), batch_size=args.batch_size, alpha=0.005,
+    sampler = FairBatch(model, x_train, y_train, torch.tensor(z_train).to(device), batch_size=args.batch_size,
+                        alpha=0.005,
                         target_fairness='eqopp', replacement=False, seed=0)
     train_loader = DataLoader(train_dataset, sampler=sampler, num_workers=0)
     val_mal_loader = DataLoader(val_mal_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False,
@@ -115,8 +134,7 @@ def run(args, data, current_time, fold, device):
         _, _, demo_p = demo_parity(male_loader=val_mal_loader, female_loader=val_fem_loader,
                                    model=model, device=device)
         _, _, equal_opp, equal_odd = equality_of_opp_odd(male_loader=val_mal_loader,
-                                          female_loader=val_fem_loader, model=model, device=device)
-
+                                                         female_loader=val_fem_loader, model=model, device=device)
 
         tk0.set_postfix(Train_Loss=train_loss, Train_SCORE=train_acc, Valid_Loss=val_loss,
                         Valid_SCORE=acc_score)
