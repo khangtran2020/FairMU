@@ -61,6 +61,13 @@ def run(args, data, current_time, fold, device):
         num_of_remove = int(args.ratio * len(disadv_gp_df))
         disadv_gp_df = disadv_gp_df.sample(n=len(disadv_gp_df) - num_of_remove, replace=False, random_state=args.seed)
         df_train = pd.concat([adv_gp_df, disadv_gp_df])
+    elif args.submode == 'sc8':
+        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
+        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
+        num_of_remove = int(args.ratio * len(disadv_gp_pos_df))
+        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=len(disadv_gp_pos_df) - num_of_remove, replace=False,
+                                                   random_state=args.seed)
+        df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df])
     elif args.submode == 'extreme':
         adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
         disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
