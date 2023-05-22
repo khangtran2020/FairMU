@@ -238,7 +238,8 @@ def equality_of_opp_odd(male_loader, female_loader, model, device):
     tn, fp, fn, tp = confusion_matrix(female_target, female_outputs).ravel()
     female_tpr = tp / (tp + fn)
     female_fpr = fp / (fp + tn)
-    return male_tpr, female_tpr, np.abs(male_tpr - female_tpr), np.abs(male_fpr - female_fpr)
+    return male_tpr, female_tpr, np.abs(male_tpr - female_tpr), \
+        0.5*np.abs(male_fpr - female_fpr)+0.5*np.abs(male_tpr - female_tpr)
 
 def performace_eval(args, y_true, y_pred):
     if args.performance_metric == 'acc':

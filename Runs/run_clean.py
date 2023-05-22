@@ -1,95 +1,18 @@
 import torch
-import pandas as pd
-from torch.utils.data import DataLoader
-from Data.datasets import Data, FairBatch
-from Utils.utils import get_name, save_res
+from Utils.utils import save_res, init_history
 from Models.init import init_model
 from tqdm import tqdm
 from Models.train_eval import EarlyStopping, train_fn, eval_fn, performace_eval
 from Models.train_eval import demo_parity, equality_of_opp_odd
 
 
-def run(args, data, current_time, fold, device):
-    train_df, test_df, male_df, female_df, feature_cols, label, z = data
-    df_valid = pd.concat([male_df[male_df.fold == fold], female_df[female_df.fold == fold]]).reset_index(drop=True)
-    df_val_mal = male_df[male_df.fold == fold]
-    df_val_fem = female_df[female_df.fold == fold]
-    val_mal_dataset = Data(df_val_mal[feature_cols].values, df_val_mal[label].values, df_val_mal[z].values)
-    val_fem_dataset = Data(df_val_fem[feature_cols].values, df_val_fem[label].values, df_val_fem[z].values)
-    valid_dataset = Data(df_valid[feature_cols].values, df_valid[label].values, df_valid[z].values)
-    test_dataset = Data(test_df[feature_cols].values, test_df[label].values, test_df[z].values)
-    adv_gp_df = male_df[male_df.fold != fold].copy() if len(male_df) > len(female_df) else female_df[
-        female_df.fold != fold].copy()
-    disadv_gp_df = male_df[male_df.fold != fold].copy() if len(male_df) < len(female_df) else female_df[
-        female_df.fold != fold].copy()
-    num_data = len(adv_gp_df) + len(disadv_gp_df)
-    args.num_feat = len(feature_cols)
-    if args.submode == 'clean':
-        df_train = pd.concat([adv_gp_df, disadv_gp_df]).reset_index(drop=True)
-    elif args.submode == 'sc4':
-        adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
-        adv_gp_neg_df = adv_gp_df[adv_gp_df[label] == 0].copy()
-        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
-        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=int((1-args.ratio) * len(disadv_gp_pos_df)), replace=False, random_state=args.seed)
-        adv_gp_neg_df = adv_gp_neg_df.sample(n=int((1-args.ratio) * len(adv_gp_neg_df)), replace=False, random_state=args.seed)
-        df_train = pd.concat([adv_gp_pos_df, adv_gp_neg_df, disadv_gp_pos_df, disadv_gp_neg_df])
-    elif args.submode == 'sc5':
-        adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
-        adv_gp_neg_df = adv_gp_df[adv_gp_df[label] == 0].copy()
-        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
-        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        temp1_df = pd.concat([adv_gp_pos_df, disadv_gp_neg_df], axis = 0)
-        temp2_df = pd.concat([adv_gp_neg_df, disadv_gp_pos_df], axis = 0)
-        temp2_df = temp2_df.sample(n=int((1-args.ratio) * len(temp2_df)), replace=False, random_state=args.seed)
-        df_train = pd.concat([temp1_df, temp2_df])
-    elif args.submode == 'sc6':
-        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
-        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        num_of_remove = int(args.ratio * len(disadv_gp_df))
-        if len(disadv_gp_pos_df) > num_of_remove:
-            disadv_gp_pos_df = disadv_gp_pos_df.sample(n=len(disadv_gp_pos_df) - num_of_remove, replace=False,
-                                                       random_state=args.seed)
-            df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df])
-        elif len(disadv_gp_pos_df) == num_of_remove:
-            df_train = pd.concat([adv_gp_df, disadv_gp_neg_df])
-        else:
-            disadv_gp_neg_df = disadv_gp_neg_df.sample(n=len(disadv_gp_neg_df) - (num_of_remove - len(disadv_gp_pos_df)),
-                                                       replace=False, random_state=args.seed)
-            df_train = pd.concat([adv_gp_df, disadv_gp_neg_df])
-    elif args.submode == 'sc7':
-        num_of_remove = int(args.ratio * len(disadv_gp_df))
-        disadv_gp_df = disadv_gp_df.sample(n=len(disadv_gp_df) - num_of_remove, replace=False, random_state=args.seed)
-        df_train = pd.concat([adv_gp_df, disadv_gp_df])
-    elif args.submode == 'sc8':
-        disadv_gp_pos_df = disadv_gp_df[disadv_gp_df[label] == 1].copy()
-        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        num_of_remove = int(args.ratio * len(disadv_gp_pos_df))
-        disadv_gp_pos_df = disadv_gp_pos_df.sample(n=len(disadv_gp_pos_df) - num_of_remove, replace=False,
-                                                   random_state=args.seed)
-        df_train = pd.concat([adv_gp_df, disadv_gp_pos_df, disadv_gp_neg_df])
-    elif args.submode == 'extreme':
-        adv_gp_pos_df = adv_gp_df[adv_gp_df[label] == 1].copy()
-        disadv_gp_neg_df = disadv_gp_df[disadv_gp_df[label] == 0].copy()
-        df_train = pd.concat([adv_gp_pos_df, disadv_gp_neg_df])
-    else:
-        df_train = None
-    df_train = df_train.sample(frac=1, replace=False).reset_index(drop=True)
-    print(f"Before we have {num_data}, After we have {df_train.shape[0]} data points")
-    train_dataset = Data(df_train[feature_cols].values, df_train[label].values, df_train[z].values)
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=0,
-                              shuffle=True, pin_memory=True, drop_last=True)
-    val_mal_loader = DataLoader(val_mal_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False,
-                                pin_memory=True, drop_last=False)
-    val_fem_loader = DataLoader(val_fem_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False,
-                                pin_memory=True, drop_last=False)
-    val_loader = DataLoader(valid_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False,
-                            pin_memory=True, drop_last=False)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=0, shuffle=False,
-                             pin_memory=True, drop_last=False)
-
-    name = get_name(args=args, current_date=current_time, fold=fold)
+def run(args, tr_info, va_info, te_info, name, device):
     model_name = '{}.pt'.format(name)
+    tr_loader, _, _ = tr_info
+    va_loader = va_info
+    te_loader, te_mal_loader, te_fem_loader = te_info
+
+
     model = init_model(args)
     model.to(device)
 
@@ -102,36 +25,25 @@ def run(args, data, current_time, fold, device):
     es = EarlyStopping(patience=args.patience, verbose=False)
 
     # History dictionary to store everything
-    history = {
-        'train_history_loss': [],
-        'train_history_acc': [],
-        'val_history_loss': [],
-        'val_history_acc': [],
-        'test_history_loss': [],
-        'test_history_acc': [],
-        'demo_parity': [],
-        'equality_odd': [],
-        'equality_opp': [],
-        'best_test': 0
-    }
+    history = init_history()
 
     # THE ENGINE LOOP
     tk0 = tqdm(range(args.epochs), total=args.epochs)
     for epoch in tk0:
-        train_loss, train_out, train_targets = train_fn(train_loader, model, criterion, optimizer, device,
+        train_loss, train_out, train_targets = train_fn(tr_loader, model, criterion, optimizer, device,
                                                         scheduler=None)
 
-        val_loss, outputs, targets = eval_fn(val_loader, model, criterion, device)
-        test_loss, test_outputs, test_targets = eval_fn(test_loader, model, criterion, device)
+        val_loss, outputs, targets = eval_fn(va_loader, model, criterion, device)
+        test_loss, test_outputs, test_targets = eval_fn(te_loader, model, criterion, device)
 
         train_acc = performace_eval(args, train_targets, train_out)
         test_acc = performace_eval(args, test_targets, test_outputs)
         acc_score = performace_eval(args, targets, outputs)
 
-        _, _, demo_p = demo_parity(male_loader=val_mal_loader, female_loader=val_fem_loader,
+        _, _, demo_p = demo_parity(male_loader=te_mal_loader, female_loader=te_fem_loader,
                                    model=model, device=device)
-        _, _, equal_opp, equal_odd = equality_of_opp_odd(male_loader=val_mal_loader,
-                                          female_loader=val_fem_loader, model=model, device=device)
+        _, _, equal_opp, equal_odd = equality_of_opp_odd(male_loader=te_mal_loader,
+                                          female_loader=te_fem_loader, model=model, device=device)
 
 
         tk0.set_postfix(Train_Loss=train_loss, Train_SCORE=train_acc, Valid_Loss=val_loss,
@@ -148,7 +60,7 @@ def run(args, data, current_time, fold, device):
         history['equality_opp'].append(equal_opp)
         es(epoch=epoch, epoch_score=acc_score, model=model, model_path=args.save_path + model_name)
     model.load_state_dict(torch.load(args.save_path + model_name))
-    test_loss, test_outputs, test_targets = eval_fn(test_loader, model, criterion, device)
+    test_loss, test_outputs, test_targets = eval_fn(te_loader, model, criterion, device)
     test_acc = performace_eval(args, test_targets, test_outputs)
     history['best_test'] = test_acc
     save_res(name=name, args=args, dct=history)

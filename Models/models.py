@@ -2,30 +2,37 @@ import torch
 from torch import nn
 import numpy as np
 import torch.nn.functional as F
-class NeuralNetwork(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, n_layers):
-        super(NeuralNetwork, self).__init__()
-        self.layers = nn.ModuleList()
-        self.layers.append(nn.Linear(input_dim, hidden_dim))
-        for i in range(0, n_layers - 1):
-            self.layers.append( nn.Linear(hidden_dim, hidden_dim))
-        self.layers.append(nn.Linear(hidden_dim, output_dim))
-        self.n_layers = n_layers
-        self.activation = torch.nn.ReLU()
+
+class NN(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, n_layer, dropout=None):
+        super(NN, self).__init__()
+        self.n_hid = n_layer - 2
+        self.in_layer = nn.Linear(in_features=input_dim, out_features=hidden_dim)
+        nn.init.kaiming_uniform_(self.in_layer.weight, nonlinearity="relu")
+        self.hid_layer = []
+        for i in range(self.n_hid):
+            layer = nn.Linear(in_features=hidden_dim, out_features=hidden_dim)
+            nn.init.kaiming_uniform_(layer.weight, nonlinearity="relu")
+            self.hid_layer.append(layer)
+        self.out_layer = nn.Linear(in_features=hidden_dim, out_features=output_dim)
+        self.dropout = nn.Dropout(dropout) if dropout is not None else None
+
 
     def forward(self, x):
-        h = x
-        for i in range(0, self.n_layers):
-            h = self.layers[i](h)
-            h = self.activation(h)
-        h = torch.nn.functional.sigmoid(self.layers[-1](h))
+        h = torch.nn.functional.relu(self.in_layer(x))
+        for i in range(self.n_hid):
+            h = self.dropout(h) if self.dropout is not None else h
+            h = torch.nn.functional.relu(self.hid_layer[i](h))
+        h = torch.nn.functional.sigmoid(self.out_layer(h))
         return h
 
-class Logit(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(Logit, self).__init__()
-        self.layer_1 = nn.Linear(input_dim, output_dim)
+
+class LR(nn.Module):
+    def __init__(self, input_dim, output_dim):
+        super(LR, self).__init__()
+        self.out_layer = nn.Linear(input_dim, output_dim)
+        nn.init.kaiming_uniform_(self.out_layer.weight, nonlinearity="sigmoid")
+
     def forward(self, x):
-        x = self.layer_1(x)
-        out = torch.nn.functional.sigmoid(x)
-        return out
+        h = torch.nn.functional.sigmoid(self.out_layer(x))
+        return h

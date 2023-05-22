@@ -20,7 +20,6 @@ class Data(Dataset):
     def __len__(self):
         return self.len
 
-
 class FairBatch(Sampler):
     """FairBatch (Sampler in DataLoader).
 
