@@ -1,4 +1,4 @@
-from Models.models import NeuralNetwork, Logit
+from Models.models import NN, LR
 from torch.optim import Adam, AdamW, SGD
 
 
@@ -6,9 +6,9 @@ def init_model(args):
     print("Training with graph {}".format(args.model_type))
     model = None
     if args.model_type == 'nn':
-        model = NeuralNetwork(input_dim=args.num_feat, hidden_dim=args.hid_dim, output_dim=1, n_layers=args.n_hid)
+        model = NN(input_dim=args.num_feat, hidden_dim=args.hid_dim, output_dim=1, n_layer=args.n_hid)
     elif args.model_type == 'lr':
-        model = Logit(input_dim=args.num_feat, hidden_dim=args.hid_dim, output_dim=1)
+        model = LR(input_dim=args.num_feat, output_dim=1)
     return model
 
 

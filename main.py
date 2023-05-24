@@ -26,6 +26,7 @@ def run(args, current_time, device):
     args.feature = feature_cols
     args.target = label
     args.z = z
+    args.num_feat = len(args.feature)
     args.input_dim = len(feature_cols)
     args.output_dim = 1
 
@@ -46,6 +47,7 @@ def run(args, current_time, device):
     }
 
     run = run_dict[args.mode]
+    run(args=args, tr_info=tr_info, va_info=va_info, te_info=te_info, name=name, device=device)
 
 
 if __name__ == "__main__":

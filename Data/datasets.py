@@ -8,14 +8,22 @@ from torch.utils.data.sampler import Sampler
 
 
 class Data(Dataset):
-    def __init__(self, X, y, ismale):
-        self.ismale = torch.from_numpy(ismale)
-        self.X = torch.from_numpy(X.astype(np.float32))
-        self.y = torch.from_numpy(y.astype(np.float32))
+    def __init__(self, X, y, ismale=None, mode='normal'):
+        if mode == 'normal':
+            self.ismale = torch.from_numpy(ismale)
+            self.X = torch.from_numpy(X.astype(np.float32))
+            self.y = torch.from_numpy(y.astype(np.float32))
+        else:
+            self.X = torch.from_numpy(X.astype(np.float32))
+            self.y = torch.from_numpy(y.astype(np.float32))
         self.len = self.X.shape[0]
+        self.mode = mode
 
     def __getitem__(self, index):
-        return self.X[index], self.y[index], self.ismale[index]
+        if self.mode == 'normal':
+            return self.X[index], self.y[index], self.ismale[index]
+        else:
+            return self.X[index], self.y[index]
 
     def __len__(self):
         return self.len

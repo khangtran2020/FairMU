@@ -102,7 +102,7 @@ class ReduceOnPlatau:
         return self.args
 
 
-def train_fn(dataloader, model, criterion, optimizer, device, scheduler):
+def train_fn(dataloader, model, criterion, optimizer, device, scheduler, mode='normal'):
     model.to(device)
     model.train()
 
@@ -111,7 +111,10 @@ def train_fn(dataloader, model, criterion, optimizer, device, scheduler):
     train_loss = 0
 
     for bi, d in enumerate(dataloader):
-        features, target, _ = d
+        if mode == 'normal':
+            features, target, _ = d
+        else:
+            features, target = d
 
         features = features.to(device, dtype=torch.float)
         target = torch.squeeze(target).to(device, dtype=torch.float)
