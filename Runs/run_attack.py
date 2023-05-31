@@ -75,7 +75,7 @@ def run(args, tr_info, va_info, te_info, name, device):
         threshold = model(torch.from_numpy(np.expand_dims(x_tar, axis=0).astype(np.float32))).item() - 1e-12
         # print(threshold - 5e-4)
         for i in range(1000):
-            test_arr_idx = np.random.choice(a=np.arange(x_te.shape[0]), size=200, replace=False)
+            test_arr_idx = np.random.choice(a=np.arange(x_te.shape[0]), size=20, replace=False)
             test_arr = x_te[test_arr_idx]
             sample = np.random.uniform(0, 1, 1)[0]
             if sample > 0.5:
@@ -86,11 +86,11 @@ def run(args, tr_info, va_info, te_info, name, device):
 
             test_arr = torch.from_numpy(test_arr.astype(np.float32))
             output = model(test_arr)
-            output = (torch.squeeze(output).cpu().detach().numpy() > threshold).astype(int)
+            output = np.round(torch.squeeze(output).cpu().detach().numpy()).astype(int)
             if np.sum(output) > 0.0:
                 prediction.append(1)
-                # print(f"label {sample > 0.5}, prediction {1}")
+                print(f"label {sample > 0.5}, prediction {1}")
             else:
                 prediction.append(0)
-                # print(f"label {sample > 0.5}, prediction {0}")
+                print(f"label {sample > 0.5}, prediction {0}")
     print("Attack performance:", accuracy_score(y_true=label,y_pred=prediction))
