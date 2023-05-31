@@ -8,6 +8,7 @@ import numpy as np
 from contextlib import contextmanager
 from Data.datasets import Data, FairBatch
 from torch.utils.data import DataLoader
+from Utils.fairrr import fairRR
 
 
 @contextmanager
@@ -299,7 +300,8 @@ def init_data(args, fold, train, test):
         X = all_data[:,:X.shape[1]]
         y = all_data[:,-1]
         # train
-
+        if args.submode == 'def':
+            X = fairRR(arr=X, eps=args.tar_eps, num_int=1, num_bit=8, mode='relax')
         train_dataset = Data(X=X, y=y, mode='attack')
         tr_loader = DataLoader(train_dataset, batch_size=args.batch_size, num_workers=0,
                                pin_memory=True, drop_last=True)

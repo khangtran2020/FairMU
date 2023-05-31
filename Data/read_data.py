@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import MinMaxScaler
-from Data.datasets import Data
+from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 
 
@@ -84,10 +84,15 @@ def read_adult(args):
     feature_cols.remove('sex')
     label = 'income'
     z = 'sex'
-    if args.mode == 'func':
-        all_data = minmax_scale(df=all_data, cols=feature_cols)
-        all_data['bias'] = 1.0
-        feature_cols.append('bias')
+    if args.submode == 'def':
+        pca = PCA(n_components='mle')
+        X = pca.fit_transform(all_data[feature_cols].values)
+        all_data = all_data.drop(feature_cols, axis=1)
+        for i in range(X.shape[1]):
+            all_data[f'pca_{i}'] = X[:, i]
+        feature_cols = list(all_data.columns)
+        feature_cols.remove('income')
+        feature_cols.remove('sex')
     train_df = all_data[:train_df.shape[0]].reset_index(drop=True)
     test_df = all_data[train_df.shape[0]:].reset_index(drop=True)
     male_tr_df = train_df[train_df[z] == 1].copy().reset_index(drop=True)
@@ -197,10 +202,15 @@ def read_lawschool(args):
     z = 'race'
     df[label] = df[label].values.astype(int)
     df[z] = df[z].values.astype(int)
-    if args.mode == 'func':
-        df = minmax_scale(df=df, cols=feature_cols)
-        df['bias'] = 1.0
-        feature_cols.append('bias')
+    if args.submode == 'def':
+        pca = PCA(n_components=args.n_comp)
+        X = pca.fit_transform(df[feature_cols].values)
+        all_data = df.drop(feature_cols, axis=1)
+        for i in range(X.shape[1]):
+            all_data[f'pca_{i}'] = X[:, i]
+        feature_cols = list(all_data.columns)
+        feature_cols.remove(label)
+        feature_cols.remove(z)
     train_df, test_df, _, _ = train_test_split(df, df[label], test_size=0.2, stratify=df[label])
     train_df = train_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
