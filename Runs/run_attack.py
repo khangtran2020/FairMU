@@ -61,6 +61,7 @@ def run(args, tr_info, va_info, te_info, name, device):
     model.load_state_dict(torch.load(args.save_path + model_name))
     # testing time
     x_te = te_df[args.feature].values
+    x_te = np.delete(x_te, args.tar_pt, 0)
     print(x_te.shape)
     if args.subsubmode == 'remove':
         x_tar_temp = np.stack([x_tar for _ in range(x_te.shape[0])])

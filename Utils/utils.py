@@ -284,11 +284,12 @@ def init_data(args, fold, train, test):
 
         # get numpy
         x_tr = df_train[args.feature].values
+        x_te = test_df[args.feature].values
         # y_tr = df_train[args.target].values
         # z_tr = df_train[args.z].values
 
-        target_pt = 0
-        x_tar = x_tr[target_pt]
+        target_pt = args.tar_pt
+        x_tar = x_te[target_pt]
         tar_arr = np.stack([x_tar for _ in range(args.multiplier)], axis=0)
         non_tar = np.delete(x_tr, target_pt, 0)
         y_tar = np.ones(tar_arr.shape[0])

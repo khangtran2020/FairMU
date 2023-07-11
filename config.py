@@ -23,6 +23,7 @@ def add_data_group(group):
     group.add_argument('--top_k', type=int, default=50, help='number of oversampling')
     group.add_argument('--n_comp', type=int, default=10, help='number of oversampling')
     group.add_argument('--tar_eps', type=float, default=1.0, help="")
+    group.add_argument("--tar_pt", type=int, default=0, help="")
 
 
 def add_model_group(group):
